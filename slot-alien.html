@@ -564,13 +564,29 @@ function setSymbols(ri,syms){
   inner.querySelectorAll('.symbol').forEach((d,i)=>{ d.innerHTML=SVGS[syms[i].id]; });
 }
 
-// ── AUDIO — stubs (re-enable later) ─────────────────────────────────────────
+// ── AUDIO ────────────────────────────────────────────────────────────────────
+const BASE = 'sounds/';
+const SOUNDS = {};
+['spin','stop','win','jackpot','loss'].forEach(k=>{
+  const a = new Audio(BASE + k + '.wav');
+  a.preload = 'auto';
+  SOUNDS[k] = a;
+});
+
+function playS(key, vol=0.7){
+  try {
+    const a = SOUNDS[key].cloneNode();
+    a.volume = vol;
+    a.play().catch(()=>{});
+  } catch(e){}
+}
+
 function unlockAudio(){}
 function resumeAC(){}
-function sndSpin(){}
-function sndReelStop(i){}
-function sndWin(mult){}
-function sndLoss(){}
+function sndSpin()    { playS('spin',  0.6); }
+function sndReelStop(i){ playS('stop', 0.5); }
+function sndWin(mult) { playS(mult>=300 ? 'jackpot' : 'win', 0.8); }
+function sndLoss()    { playS('loss',  0.5); }
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function spin(){
