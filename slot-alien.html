@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALIEN REELS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg:     #03050a;
+  --panel:  #070d14;
+  --border: #004428;
+  --plasma: #00ff88;
+  --p2:     #00c060;
+  --purple: #8b00ff;
+  --red:    #ff2244;
+  --text:   #b0ffd8;
+  --muted:  #1a5040;
+  --rbg:    #040a0f;
+  --glow:   0 0 16px rgba(0,255,136,.4);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px 0;
+}
+
+/* stars */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(0,255,136,.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 60%, rgba(139,0,255,.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 25%, rgba(0,255,136,.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 80%, rgba(0,255,136,.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 40%, rgba(139,0,255,.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 20% 90%, rgba(0,255,136,.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 12%, rgba(0,255,136,.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 50%, rgba(139,0,255,.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 10%, rgba(0,255,136,.5) 0%, transparent 100%);
+}
+/* scanlines */
+body::after {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px,
+    rgba(0,255,136,.012) 3px, rgba(0,255,136,.012) 4px);
+}
+
+/* ── LAYOUT ── */
+.wrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  /* never wider than screen, never wider than a comfortable max */
+  max-width: min(100vw, 480px);
+  padding: 0 12px;
+}
+
+/* ── LOGO ── */
+.logo-area { text-align: center; margin-bottom: 16px; }
+.logo-tag  { font-size: .55rem; color: var(--muted); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 4px; }
+.logo {
+  font-family: 'Orbitron', sans-serif; font-weight: 900;
+  font-size: clamp(1.6rem, 8vw, 2.4rem);
+  letter-spacing: clamp(4px, 2vw, 10px);
+  color: var(--plasma);
+  text-shadow: var(--glow), 0 0 60px rgba(0,255,136,.2);
+  animation: flicker 7s infinite;
+}
+.logo span { color: var(--purple); text-shadow: 0 0 20px rgba(139,0,255,.6); }
+@keyframes flicker { 0%,96%,100%{opacity:1;} 97%{opacity:.82;} 98%{opacity:1;} 99%{opacity:.88;} }
+.logo-sub { font-size: .5rem; color: var(--muted); letter-spacing: 3px; margin-top: 4px; }
+
+/* ── MACHINE ── */
+.machine {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px 10px;
+  box-shadow: 0 0 40px rgba(0,255,136,.05), inset 0 0 60px rgba(0,0,0,.5);
+  position: relative;
+}
+.machine::before, .machine::after {
+  content: ''; position: absolute; width: 14px; height: 14px;
+  border-color: var(--plasma); border-style: solid;
+}
+.machine::before { top: 7px; left: 7px; border-width: 2px 0 0 2px; }
+.machine::after  { bottom: 7px; right: 7px; border-width: 0 2px 2px 0; }
+
+/* ── STATS ── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.stat-box {
+  background: var(--rbg); border: 1px solid var(--border);
+  border-radius: 2px; padding: 7px 6px; text-align: center;
+}
+.stat-label { font-size: .48rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 3px; }
+.stat-value { font-family: 'Orbitron', sans-serif; font-size: clamp(.9rem, 4vw, 1.2rem); color: var(--plasma); }
+.stat-value.bad { color: var(--red); }
+
+/* ── REELS WRAP ──
+   Key: width is 100% of machine content, reels are fluid inside it.
+   No overflow:hidden here — each .reel clips itself.
+*/
+.reels-wrap {
+  width: 100%;
+  background: var(--rbg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 10px 0;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+/* payline overlay — spans full wrap width */
+.payline {
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%; transform: translateY(-50%);
+  height: 68px;
+  border-top: 1px solid rgba(0,255,136,.12);
+  border-bottom: 1px solid rgba(0,255,136,.12);
+  pointer-events: none;
+  transition: all .3s;
+  z-index: 1;
+}
+.payline.active {
+  border-color: var(--plasma);
+  background: rgba(0,255,136,.05);
+  box-shadow: 0 0 18px rgba(0,255,136,.2);
+}
+
+/* ── REELS ROW ──
+   Uses CSS Grid so columns are equal and fill 100% width perfectly.
+   No fixed px widths — everything is proportional.
+*/
+.reels {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 0 8px;
+  width: 100%;
+}
+
+/* ── SINGLE REEL ──
+   overflow:hidden here clips the spinning animation.
+   Width comes from grid, not from a fixed value.
+*/
+.reel {
+  overflow: hidden;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  background: #020608;
+  position: relative;
+  aspect-ratio: 1 / 3; /* height = 3× width, always */
+  transition: border-color .3s, box-shadow .3s;
+}
+.reel.winning {
+  border-color: var(--plasma);
+  box-shadow: 0 0 12px rgba(0,255,136,.5), inset 0 0 8px rgba(0,255,136,.07);
+}
+.reel.winning .symbol svg {
+  animation: svg-pulse .4s ease-in-out infinite alternate;
+}
+@keyframes svg-pulse {
+  from { filter: drop-shadow(0 0 2px rgba(0,255,136,.4)) brightness(1); }
+  to   { filter: drop-shadow(0 0 10px rgba(0,255,136,1)) brightness(1.3); }
+}
+
+/* top/bottom fade inside each reel */
+.reel::before, .reel::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 30%;
+  z-index: 3; pointer-events: none;
+}
+.reel::before { top: 0;    background: linear-gradient(to bottom, #020608, transparent); }
+.reel::after  { bottom: 0; background: linear-gradient(to top,   #020608, transparent); }
+
+/* ── REEL INNER — scrolling strip ── */
+.reel-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.reel-inner.spinning {
+  animation: reel-spin .07s linear infinite;
+}
+@keyframes reel-spin {
+  /* move by exactly 1/3 of reel height (one symbol) */
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-33.333%); }
+}
+
+/* ── SYMBOL CELL ──
+   Fills reel width, height = 1/3 of reel (aspect-ratio 1:3 / 3 rows).
+*/
+.symbol {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+}
+.symbol svg {
+  width: 60%;
+  height: 60%;
+  display: block;
+}
+
+/* ── WIN MSG ── */
+.win-display {
+  min-height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+}
+.win-msg {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(.8rem, 4vw, 1.2rem);
+  font-weight: 700; letter-spacing: 3px;
+  color: var(--plasma); text-shadow: var(--glow);
+  animation: pulse-win .45s ease-in-out infinite alternate;
+}
+.win-msg.loss {
+  color: var(--muted); font-size: .68rem; letter-spacing: 2px;
+  animation: none; font-family: 'Share Tech Mono', monospace; font-weight: 400;
+}
+@keyframes pulse-win {
+  from { opacity: .75; text-shadow: 0 0 8px rgba(0,255,136,.4); }
+  to   { opacity: 1;   text-shadow: 0 0 28px rgba(0,255,136,.9); }
+}
+
+/* ── BET ── */
+.bet-row {
+  display: flex; align-items: center; gap: 5px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.bet-label { font-size: .48rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-right: 2px; }
+.bet-btn {
+  background: var(--rbg); border: 1px solid var(--border); color: var(--muted);
+  border-radius: 2px; padding: 5px 8px; font-size: .72rem;
+  font-family: 'Share Tech Mono', monospace; cursor: pointer; transition: all .15s;
+  flex: 1; text-align: center;
+}
+.bet-btn:hover  { border-color: var(--p2); color: var(--p2); }
+.bet-btn.active { border-color: var(--plasma); color: var(--plasma); background: rgba(0,255,136,.06); }
+
+/* ── SPIN ── */
+.spin-btn {
+  width: 100%; padding: 14px;
+  border: 1px solid var(--plasma); border-radius: 2px;
+  background: linear-gradient(135deg, rgba(0,255,136,.12), rgba(0,80,40,.2));
+  color: var(--plasma);
+  font-family: 'Orbitron', sans-serif; font-size: clamp(.9rem, 4vw, 1.1rem);
+  font-weight: 700; letter-spacing: 5px; cursor: pointer; transition: all .2s;
+  box-shadow: 0 0 18px rgba(0,255,136,.1), inset 0 0 16px rgba(0,255,136,.03);
+  text-shadow: var(--glow);
+}
+.spin-btn:hover:not(:disabled) { background: linear-gradient(135deg, rgba(0,255,136,.2), rgba(0,120,60,.25)); box-shadow: 0 0 28px rgba(0,255,136,.3); }
+.spin-btn:active:not(:disabled) { transform: scale(.99); }
+.spin-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+.divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 12px 0; }
+
+/* ── CONFIG ── */
+.config-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.config-label { font-size: .48rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; min-width: 80px; }
+.config-row input[type=range] { flex: 1; accent-color: var(--plasma); }
+.config-value { font-size: .65rem; color: var(--plasma); min-width: 36px; text-align: right; font-family: 'Orbitron', sans-serif; }
+
+/* ── PAYTABLE ── */
+.paytable-toggle {
+  width: 100%; background: none; border: 1px solid var(--border);
+  color: var(--muted); border-radius: 2px; padding: 7px;
+  font-size: .55rem; letter-spacing: 3px; text-transform: uppercase;
+  cursor: pointer; margin-top: 10px; font-family: 'Share Tech Mono', monospace;
+  transition: all .2s;
+}
+.paytable-toggle:hover { color: var(--p2); border-color: var(--p2); }
+.paytable { display: none; background: var(--rbg); border: 1px solid var(--border); border-radius: 2px; padding: 10px; margin-top: 6px; }
+.paytable.open { display: block; }
+.paytable-title { font-size: .48rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+.paytable-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 0; border-bottom: 1px solid rgba(0,255,136,.04); font-size: .75rem;
+}
+.paytable-row:last-child { border-bottom: none; }
+.pt-syms { display: flex; gap: 1px; }
+.pt-syms svg { width: 16px; height: 16px; }
+.pt-name { color: var(--muted); font-size: .58rem; flex: 1; padding: 0 6px; }
+.pt-mult { color: var(--plasma); font-family: 'Orbitron', sans-serif; font-size: .68rem; }
+
+.tx-row { display: flex; justify-content: space-between; margin-top: 8px; font-size: .48rem; color: var(--muted); letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-tag">// transmissão extraterrestre //</div>
+    <div class="logo">ALIEN<span>REELS</span></div>
+    <div class="logo-sub">SECTOR 7 · RNG · HOUSE EDGE CONFIGURÁVEL</div>
+  </div>
+
+  <div class="machine">
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-label">Créditos</div>
+        <div class="stat-value" id="balance">500</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Aposta</div>
+        <div class="stat-value" id="current-bet">10</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">RTP Real</div>
+        <div class="stat-value" id="rtp-real">—</div>
+      </div>
+    </div>
+
+    <div class="reels-wrap">
+      <div class="payline" id="payline"></div>
+      <div class="reels" id="reels"></div>
+    </div>
+
+    <div class="win-display">
+      <div class="win-msg loss" id="win-msg">_ AGUARDANDO SINAL _</div>
+    </div>
+
+    <div class="bet-row">
+      <span class="bet-label">BET</span>
+      <button class="bet-btn" onclick="setBet(5)">5</button>
+      <button class="bet-btn active" onclick="setBet(10)">10</button>
+      <button class="bet-btn" onclick="setBet(25)">25</button>
+      <button class="bet-btn" onclick="setBet(50)">50</button>
+      <button class="bet-btn" onclick="setBet(100)">100</button>
+    </div>
+
+    <button class="spin-btn" id="spin-btn" onclick="spin()">TRANSMITIR</button>
+
+    <div class="divider"></div>
+
+    <div class="config-row">
+      <span class="config-label">House Edge</span>
+      <input type="range" id="he-slider" min="2" max="15" value="5" step="1" oninput="updateHE()">
+      <span class="config-value" id="he-val">5%</span>
+    </div>
+    <div class="config-row">
+      <span class="config-label">Volatilidade</span>
+      <input type="range" id="vol-slider" min="1" max="3" value="2" step="1" oninput="updateVol()">
+      <span class="config-value" id="vol-val">MED</span>
+    </div>
+
+    <div class="tx-row">
+      <span id="tx-count">TX: 0</span>
+      <span id="tx-wagered">APOSTADO: 0</span>
+      <span id="tx-returned">RETORNO: 0</span>
+    </div>
+
+    <button class="paytable-toggle" onclick="togglePaytable()">▸ TABELA DE SINAL</button>
+    <div class="paytable" id="paytable"></div>
+  </div>
+</div>
+
+<script>
+const SVGS = {
+  alien: `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="22" cy="20" rx="13" ry="16" fill="#001a0d" stroke="#00ff88" stroke-width="1.5"/>
+    <ellipse cx="16" cy="17" rx="5" ry="3.5" fill="#00ff88" opacity=".9"/>
+    <ellipse cx="28" cy="17" rx="5" ry="3.5" fill="#00ff88" opacity=".9"/>
+    <ellipse cx="16" cy="17" rx="2.5" ry="2" fill="#003318"/>
+    <ellipse cx="28" cy="17" rx="2.5" ry="2" fill="#003318"/>
+    <circle cx="16" cy="17" r="1" fill="#00ff88"/>
+    <circle cx="28" cy="17" r="1" fill="#00ff88"/>
+    <path d="M17 25 Q22 28 27 25" stroke="#00ff88" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+    <line x1="16" y1="5" x2="13" y2="1" stroke="#00ff88" stroke-width="1.2" stroke-linecap="round"/>
+    <circle cx="13" cy="1" r="1.5" fill="#00ff88"/>
+    <line x1="28" y1="5" x2="31" y2="1" stroke="#00ff88" stroke-width="1.2" stroke-linecap="round"/>
+    <circle cx="31" cy="1" r="1.5" fill="#00ff88"/>
+  </svg>`,
+  ufo: `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M15 26 L10 42 M22 28 L22 42 M29 26 L34 42" stroke="#8b00ff" stroke-width="1" opacity=".5" stroke-linecap="round"/>
+    <ellipse cx="22" cy="26" rx="14" ry="5" fill="#0d001a" stroke="#8b00ff" stroke-width="1.5"/>
+    <path d="M10 24 Q22 10 34 24" fill="#0d001a" stroke="#8b00ff" stroke-width="1.5"/>
+    <ellipse cx="22" cy="20" rx="6" ry="4" fill="#1a003a" stroke="#8b00ff" stroke-width="1"/>
+    <ellipse cx="22" cy="20" rx="3" ry="2" fill="#8b00ff" opacity=".5"/>
+    <circle cx="13" cy="26" r="1.5" fill="#00ff88"/>
+    <circle cx="18" cy="28" r="1.5" fill="#8b00ff"/>
+    <circle cx="22" cy="29" r="1.5" fill="#00ff88"/>
+    <circle cx="26" cy="28" r="1.5" fill="#8b00ff"/>
+    <circle cx="31" cy="26" r="1.5" fill="#00ff88"/>
+  </svg>`,
+  dna: `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M15 4 C10 10 18 16 13 22 C8 28 16 34 11 40" stroke="#00ff88" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <path d="M29 4 C34 10 26 16 31 22 C36 28 28 34 33 40" stroke="#00c060" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <line x1="14" y1="9"  x2="30" y2="9"  stroke="#00ff88" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+    <line x1="12" y1="15" x2="32" y2="15" stroke="#00ff88" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+    <line x1="13" y1="22" x2="31" y2="22" stroke="#00ff88" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+    <line x1="12" y1="29" x2="32" y2="29" stroke="#00ff88" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+    <line x1="14" y1="35" x2="30" y2="35" stroke="#00ff88" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+    <circle cx="14" cy="9"  r="1.5" fill="#00ff88"/>
+    <circle cx="30" cy="9"  r="1.5" fill="#00ff88"/>
+    <circle cx="13" cy="22" r="1.5" fill="#00ff88"/>
+    <circle cx="31" cy="22" r="1.5" fill="#00ff88"/>
+    <circle cx="14" cy="35" r="1.5" fill="#00ff88"/>
+    <circle cx="30" cy="35" r="1.5" fill="#00ff88"/>
+  </svg>`,
+  radiation: `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="22" cy="22" r="18" stroke="#ff8800" stroke-width="1" opacity=".3"/>
+    <path d="M22 22 L22 8 A14 14 0 0 1 34.1 15 Z" fill="#ff6600" opacity=".85"/>
+    <path d="M22 22 L34.1 29 A14 14 0 0 1 9.9 29 Z" fill="#ff6600" opacity=".85"/>
+    <path d="M22 22 L9.9 15 A14 14 0 0 1 22 8 Z" fill="#ff6600" opacity=".85"/>
+    <circle cx="22" cy="22" r="5" fill="#0a0500" stroke="#ff6600" stroke-width="1.5"/>
+    <circle cx="22" cy="22" r="2.5" fill="#ff6600" opacity=".7"/>
+  </svg>`,
+  galaxy: `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="22" cy="22" r="18" stroke="#8b00ff" stroke-width=".5" opacity=".2"/>
+    <path d="M22 22 C26 18 32 14 34 10" stroke="#8b00ff" stroke-width="1.8" stroke-linecap="round" fill="none" opacity=".9"/>
+    <path d="M22 22 C18 26 14 32 10 34" stroke="#8b00ff" stroke-width="1.8" stroke-linecap="round" fill="none" opacity=".9"/>
+    <path d="M22 22 C26 26 30 32 28 36" stroke="#6600cc" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".8"/>
+    <path d="M22 22 C18 18 14 12 16 8"  stroke="#6600cc" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".8"/>
+    <circle cx="30" cy="15" r="1.2" fill="#8b00ff"/>
+    <circle cx="14" cy="31" r="1.2" fill="#8b00ff"/>
+    <circle cx="22" cy="22" r="4" fill="#1a003a"/>
+    <circle cx="22" cy="22" r="4" stroke="#8b00ff" stroke-width="1.2"/>
+    <circle cx="22" cy="22" r="2" fill="#8b00ff" opacity=".7"/>
+  </svg>`,
+  planet: `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="22" cy="22" rx="20" ry="6" stroke="#00c8ff" stroke-width="1.5" fill="none" opacity=".4"
+      stroke-dasharray="31.4 31.4"/>
+    <circle cx="22" cy="22" r="13" fill="#0d0520"/>
+    <circle cx="22" cy="22" r="13" stroke="#00c8ff" stroke-width="1.2"/>
+    <path d="M9.5 18 Q22 15 34.5 18" stroke="#005580" stroke-width="1" fill="none" opacity=".7"/>
+    <path d="M9.5 26 Q22 29 34.5 26" stroke="#005580" stroke-width="1" fill="none" opacity=".7"/>
+    <ellipse cx="22" cy="22" rx="20" ry="6" stroke="#00c8ff" stroke-width="1.5" fill="none"
+      stroke-dasharray="31.4 31.4" stroke-dashoffset="31.4"/>
+  </svg>`,
+  stardust: `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22 6 L24.5 18 L37 16 L27 24 L32 36 L22 29 L12 36 L17 24 L7 16 L19.5 18 Z"
+      fill="#001a0a" stroke="#00ff88" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M22 12 L23.5 19.5 L31 18.5 L25 23 L28 30 L22 26 L16 30 L19 23 L13 18.5 L20.5 19.5 Z"
+      fill="#00ff88" opacity=".15"/>
+    <circle cx="22" cy="22" r="3" fill="#00ff88" opacity=".8"/>
+    <circle cx="8"  cy="10" r="1" fill="#00ff88" opacity=".5"/>
+    <circle cx="36" cy="10" r="1" fill="#00ff88" opacity=".5"/>
+  </svg>`,
+  telescope: `<svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="22" y1="30" x2="12" y2="42" stroke="#00ff88" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+    <line x1="22" y1="30" x2="22" y2="42" stroke="#00ff88" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+    <line x1="22" y1="30" x2="32" y2="42" stroke="#00ff88" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+    <circle cx="22" cy="29" r="3" fill="#001a0d" stroke="#00ff88" stroke-width="1.2"/>
+    <rect x="6" y="18" width="30" height="10" rx="5" fill="#001a0d" stroke="#00ff88" stroke-width="1.4"
+      transform="rotate(-20 22 23)"/>
+    <ellipse cx="9" cy="27" rx="3.5" ry="5" fill="#003318" stroke="#00ff88" stroke-width="1.2"
+      transform="rotate(-20 9 27)"/>
+    <ellipse cx="35" cy="19" rx="2.5" ry="3.5" fill="#003318" stroke="#00c060" stroke-width="1"
+      transform="rotate(-20 35 19)"/>
+    <circle cx="5" cy="8" r="1.5" fill="#00ff88" opacity=".9"/>
+    <line x1="5" y1="5" x2="5" y2="11" stroke="#00ff88" stroke-width=".8" opacity=".5"/>
+    <line x1="2" y1="8" x2="8" y2="8"  stroke="#00ff88" stroke-width=".8" opacity=".5"/>
+  </svg>`
+};
+
+const SYMBOLS = [
+  { id:'alien',     name:'Alien',      weight:1,  mult:250 },
+  { id:'ufo',       name:'OVNI',       weight:2,  mult:100 },
+  { id:'dna',       name:'DNA',        weight:3,  mult:60  },
+  { id:'radiation', name:'Radiação',   weight:5,  mult:30  },
+  { id:'galaxy',    name:'Galáxia',    weight:6,  mult:20  },
+  { id:'planet',    name:'Planeta',    weight:8,  mult:12  },
+  { id:'stardust',  name:'Stardust',   weight:10, mult:8   },
+  { id:'telescope', name:'Telescópio', weight:4,  mult:45  },
+];
+
+let balance=500, bet=10, houseEdge=5, spinning=false;
+let totalWagered=0, totalReturned=0, spinCount=0;
+const NR=5, ROWS=3;
+
+function wrand(pool){
+  let t=pool.reduce((s,x)=>s+x.weight,0), r=Math.random()*t;
+  for(const s of pool){r-=s.weight;if(r<=0)return s;}
+  return pool[pool.length-1];
+}
+function genReel(){ return Array.from({length:ROWS},()=>wrand(SYMBOLS)); }
+
+function evaluate(res){
+  const mid=res.map(c=>c[1]);
+  const cnt={};
+  mid.forEach(s=>{cnt[s.id]=(cnt[s.id]||0)+1;});
+  let best=0;
+  for(const [id,n] of Object.entries(cnt)){
+    const sym=SYMBOLS.find(s=>s.id===id);
+    let m=0;
+    if(n===5)m=sym.mult*3;
+    else if(n===4)m=sym.mult*1.5;
+    else if(n===3)m=sym.mult;
+    else if(n===2&&(id==='alien'||id==='ufo'))m=sym.mult*.25;
+    if(m>best)best=m;
+  }
+  return Math.floor(best);
+}
+
+function applyHE(res){
+  const red=Math.max(0,(95-(100-houseEdge))/95);
+  if(evaluate(res)>0&&Math.random()<red){
+    const nr=res.map(c=>[...c]);
+    const ri=Math.floor(Math.random()*NR);
+    const pool=SYMBOLS.filter(s=>s.id!==res[ri][1].id);
+    nr[ri][1]=pool[Math.floor(Math.random()*pool.length)];
+    return nr;
+  }
+  return res;
+}
+
+function mkCell(sym){
+  const d=document.createElement('div');
+  d.className='symbol';
+  d.innerHTML=SVGS[sym.id];
+  return d;
+}
+
+function initReels(){
+  const c=document.getElementById('reels');
+  c.innerHTML='';
+  for(let r=0;r<NR;r++){
+    const col=genReel();
+    const reel=document.createElement('div');
+    reel.className='reel'; reel.id=`reel-${r}`;
+    const inner=document.createElement('div');
+    inner.className='reel-inner'; inner.id=`ri-${r}`;
+    col.forEach(s=>inner.appendChild(mkCell(s)));
+    reel.appendChild(inner);
+    c.appendChild(reel);
+  }
+}
+
+function setSymbols(ri,syms){
+  const inner=document.getElementById(`ri-${ri}`);
+  inner.querySelectorAll('.symbol').forEach((d,i)=>{ d.innerHTML=SVGS[syms[i].id]; });
+}
+
+// ── AUDIO ENGINE ─────────────────────────────────────────────────────────────
+// Created lazily on first tap — required by iOS/Android policy
+let AC = null;
+let masterGain = null;
+
+function getAC(){
+  if(!AC){
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = AC.createGain();
+    masterGain.gain.value = 0.7;
+    masterGain.connect(AC.destination);
+  }
+  if(AC.state === 'suspended') AC.resume();
+  return AC;
+}
+
+function resumeAC(){ getAC(); }
+
+function playTone(freq, type, startVol, endVol, duration, startTime=0){
+  const ac = getAC();
+  const t = ac.currentTime + startTime;
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  gain.gain.setValueAtTime(startVol, t);
+  gain.gain.linearRampToValueAtTime(endVol, t + duration);
+  osc.connect(gain);
+  gain.connect(masterGain);
+  osc.start(t);
+  osc.stop(t + duration);
+}
+
+function playNoise(duration, vol=0.08){
+  const ac = getAC();
+  const buf = ac.createBuffer(1, ac.sampleRate * duration, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1);
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(vol, ac.currentTime);
+  gain.gain.linearRampToValueAtTime(0, ac.currentTime + duration);
+  const filter = ac.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 800;
+  filter.Q.value = 1.2;
+  src.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+  src.start();
+  src.stop(ac.currentTime + duration);
+}
+
+function sndSpin(){
+  const ac = getAC();
+  playNoise(0.95, 0.15);
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(340, ac.currentTime);
+  osc.frequency.linearRampToValueAtTime(60, ac.currentTime + 0.95);
+  gain.gain.setValueAtTime(0.2, ac.currentTime);
+  gain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.95);
+  osc.connect(gain); gain.connect(masterGain);
+  osc.start(); osc.stop(ac.currentTime + 0.95);
+}
+
+function sndReelStop(reelIdx){
+  // each reel stop: short click + pitch rising with index
+  const freq = 180 + reelIdx * 60;
+  playTone(freq, 'square', 0.2, 0, 0.08);
+  playTone(freq*2, 'sine', 0.08, 0, 0.12, 0.04);
+}
+
+function sndWin(mult){
+  if(mult >= 300){
+    // JACKPOT: ascending fanfare
+    [261,329,392,523,659,784].forEach((f,i)=>{
+      playTone(f,'sine',0.3,0,0.25, i*0.12);
+      playTone(f*2,'triangle',0.1,0,0.2, i*0.12+0.05);
+    });
+    // sparkle noise bursts
+    for(let i=0;i<4;i++) setTimeout(()=>playNoise(0.15,0.06), i*200);
+  } else if(mult >= 60){
+    // BIG WIN: short upward sweep
+    [330,440,550,660].forEach((f,i)=>{ playTone(f,'triangle',0.25,0,0.2,i*0.1); });
+    playNoise(0.3, 0.05);
+  } else {
+    // small win: two tone ding
+    playTone(520,'sine',0.2,0,0.15);
+    playTone(780,'sine',0.15,0,0.15,0.1);
+  }
+}
+
+function sndLoss(){
+  // soft descending blip
+  playTone(220,'sine',0.1,0,0.2);
+  playTone(160,'sine',0.06,0,0.18,0.1);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function spin(){
+  if(spinning)return;
+  if(balance<bet){setMsg('CRÉDITOS INSUFICIENTES',true);return;}
+  resumeAC();
+  spinning=true;
+  balance-=bet; totalWagered+=bet; spinCount++;
+  updateStats();
+  document.getElementById('spin-btn').disabled=true;
+  document.getElementById('payline').classList.remove('active');
+  document.querySelectorAll('.reel').forEach(r=>r.classList.remove('winning'));
+  setMsg('_ ESCANEANDO _',true);
+
+  sndSpin();
+
+  let res=Array.from({length:NR},()=>genReel());
+  res=applyHE(res);
+
+  const stops=[380,520,660,800,940];
+  for(let r=0;r<NR;r++) document.getElementById(`ri-${r}`).classList.add('spinning');
+  for(let r=0;r<NR;r++){
+    await delay(stops[r]);
+    document.getElementById(`ri-${r}`).classList.remove('spinning');
+    setSymbols(r,res[r]);
+    sndReelStop(r);
+  }
+
+  const mult=evaluate(res);
+  const win=Math.floor(bet*mult);
+
+  if(win>0){
+    balance+=win; totalReturned+=win;
+    document.getElementById('payline').classList.add('active');
+    const mid=res.map(c=>c[1]);
+    const cnt={};
+    mid.forEach(s=>{cnt[s.id]=(cnt[s.id]||0)+1;});
+    let winId=null,winN=0;
+    for(const [id,n] of Object.entries(cnt)){if(n>winN){winN=n;winId=id;}}
+    mid.forEach((s,ri)=>{ if(s.id===winId) document.getElementById(`reel-${ri}`).classList.add('winning'); });
+    const lbl=mult>=300?'⚡ JACKPOT ALIEN ⚡':mult>=60?'🛸 CONTATO!':'+'+win+' · '+mult+'x';
+    setMsg(lbl,false);
+    setTimeout(()=>sndWin(mult), 100);
+  } else {
+    sndLoss();
+    setMsg('_ SEM SINAL _',true);
+  }
+  updateStats();
+  spinning=false;
+  document.getElementById('spin-btn').disabled=false;
+}
+
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+
+function setMsg(t,loss){
+  const el=document.getElementById('win-msg');
+  el.textContent=t; el.className='win-msg'+(loss?' loss':'');
+}
+
+function updateStats(){
+  document.getElementById('balance').textContent=balance;
+  document.getElementById('current-bet').textContent=bet;
+  document.getElementById('tx-count').textContent='TX: '+spinCount;
+  document.getElementById('tx-wagered').textContent='APOSTADO: '+totalWagered;
+  document.getElementById('tx-returned').textContent='RETORNO: '+totalReturned;
+  const el=document.getElementById('rtp-real');
+  if(totalWagered>0){
+    const rtp=((totalReturned/totalWagered)*100).toFixed(1);
+    el.textContent=rtp+'%';
+    el.className='stat-value '+(parseFloat(rtp)>=(100-houseEdge-5)?'':'bad');
+  } else { el.textContent='—'; el.className='stat-value'; }
+}
+
+function setBet(v){
+  bet=v;
+  document.querySelectorAll('.bet-btn').forEach(b=>b.classList.toggle('active',+b.textContent===v));
+  updateStats();
+}
+function updateHE(){ houseEdge=+document.getElementById('he-slider').value; document.getElementById('he-val').textContent=houseEdge+'%'; }
+function updateVol(){ const v=+document.getElementById('vol-slider').value; document.getElementById('vol-val').textContent=['','LOW','MED','HIGH'][v]; }
+function togglePaytable(){ document.getElementById('paytable').classList.toggle('open'); }
+
+function buildPaytable(){
+  const pt=document.getElementById('paytable');
+  pt.innerHTML='<div class="paytable-title">// 3 iguais · payline central //</div>';
+  SYMBOLS.forEach(s=>{
+    const row=document.createElement('div');
+    row.className='paytable-row';
+    row.innerHTML=`<span class="pt-syms">${SVGS[s.id]}${SVGS[s.id]}${SVGS[s.id]}</span><span class="pt-name">${s.name}</span><span class="pt-mult">${s.mult}x</span>`;
+    pt.appendChild(row);
+  });
+}
+
+initReels(); buildPaytable(); updateStats();
+</script>
+</body>
+</html>
